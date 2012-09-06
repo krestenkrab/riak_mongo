@@ -42,6 +42,8 @@
 -define(DEFAULT_TIMEOUT, 60000).
 -define(DEFAULT_FIND_SIZE, 101).
 
+-define(MD_INDEX,    <<"index">>).
+
 %% however we map this, first step is to hardcode some values
 %% used by JS tests and see how they can be dynamized
 stats(Bucket, State) ->
@@ -55,15 +57,21 @@ insert(#mongo_insert{dbcoll=Bucket, documents=Docs, continueonerror=ContinueOnEr
     {ok, C} = riak:local_client(),
 
     Errors =
-        lists:foldl(fun(#bson_raw_document{ id=BSON_ID, body=Doc }, Err)
+        lists:foldl(fun(#bson_raw_document{ id=BSON_ID, body=Doc }=BSONRaw, Err)
                           when Err=:=[]; ContinueOnError=:=true ->
                             ID = bson_to_riak_key(BSON_ID),
 
                             O = riak_object:new(Bucket, ID, Doc, "application/bson"),
 
-                            error_logger:info_msg("storing ~p~n", [O]),
+                            Indexes = riak_mongo_index:index_object(Bucket, BSONRaw, C),
 
-                            case C:put(O) of
+                            MD1 = riak_object:get_metadata(O),
+                            MD2 = dict:store(?MD_INDEX, Indexes, MD1),
+                            O2 = riak_object:update_metadata(O, MD2),
+
+                            error_logger:info_msg("storing ~p~n", [O2]),
+
+                            case C:put(O2) of
                                 ok -> Err;
                                 Error -> [Error|Err]
                             end

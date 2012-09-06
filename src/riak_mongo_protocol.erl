@@ -68,8 +68,9 @@ bit(false) -> 0.
 
 decode_packet( << ?HDR(_, ?InsertOpcode), ?get_bits32(0,0,0,0,0,0,0,ContinueOnError), Rest/binary >> ) ->
     {DBColl, Rest1} = riak_mongo_bson:get_cstring(Rest),
+    {DB, Coll} = split_dbcoll(DBColl),
     BsonDocs = get_all_raw_docs(Rest1),
-    {ok, #mongo_insert{ dbcoll=DBColl,
+    {ok, #mongo_insert{ dbcoll=DBColl, db=DB, coll=Coll,
                         request_id=RequestId,
                         documents=BsonDocs,
                         continueonerror = bool(ContinueOnError)

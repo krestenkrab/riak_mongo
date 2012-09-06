@@ -103,6 +103,10 @@ process_message(#mongo_killcursor{ cursorids=IDs }, State = #worker_state { curs
                           IDs),
     {noreply, State#worker_state{ cursors=NewDict }};
 
+process_message(#mongo_insert{ coll = <<"system.indexes">> }=Insert, State) ->
+    State2 = riak_mongo_index:create_index( Insert, State ),
+    {noreply, State2};
+
 process_message(#mongo_insert{}=Insert, State) ->
     case check_docs(Insert) of
 	[] -> 

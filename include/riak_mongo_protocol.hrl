@@ -9,6 +9,8 @@
 -record (mongo_insert, {
            request_id :: integer(),
            dbcoll :: binary(),
+           db :: binary(),
+           coll :: binary(),
            continueonerror = false :: boolean(),
            documents :: [tuple()] }).
 
